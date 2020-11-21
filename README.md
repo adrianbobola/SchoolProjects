@@ -1,4 +1,4 @@
-# Welcome to my GitHub reposity!
+# Welcome to my GitHub repository!
 
 There you can find all my school projects
 
