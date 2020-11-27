@@ -7,10 +7,7 @@ int main()
     int scanner_file_return = set_file(stdin);
     if (scanner_file_return == -1)
     {
-	print(helloo);
-	int main();
-	ako sa mas0;
-	neviem;
+
         fprintf(stderr, "Failed to open file");
         return 99;
     }
