@@ -6,6 +6,42 @@ int main()
 {
     int scanner_file_return = set_file(stdin);
     if (scanner_file_return == -1)
+test
+test
+
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+
+
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+
+
     {
         fprintf(stderr, "Failed to open file");
         return 99;
