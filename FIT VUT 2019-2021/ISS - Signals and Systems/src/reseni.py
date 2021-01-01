@@ -4,16 +4,22 @@ import soundfile as sf
 import IPython
 import scipy as sp
 from scipy.io import wavfile
-
-fs1, nahravka1 = wavfile.read('maskoff_tone.wav')
+import cmath
+from scipy.signal import spectrogram, lfilter
+# -----------------------------------------------------------------------
+# ------------ UKOL 1 + 2 -----------------------------------------------
+# -----------------------------------------------------------------------
+fs1, nahravka1 = wavfile.read('../audio/maskoff_tone.wav')
 nahravka1 = nahravka1[16000:32160]  # 1.01 sec
 nahravka1_ramce = []
 
-fs2, nahravka2 = wavfile.read('maskon_tone.wav')
+fs2, nahravka2 = wavfile.read('../audio/maskon_tone.wav')
 nahravka2 = nahravka2[16000:32160]  # 1.01 sec
 nahravka2_ramce = []
 
+# -----------------------------------------------------------------------
 # ------------ UKOL 3 ---------------------------------------------------
+# -----------------------------------------------------------------------
 # NAHRAVKA 1
 counter = 0
 for i in range(100):
@@ -48,7 +54,9 @@ plt.xlabel('time [s]')
 plt.ylabel('y')
 plt.show()
 
+# -----------------------------------------------------------------------
 # ------------ UKOL 4 ---------------------------------------------------
+# -----------------------------------------------------------------------
 def print_ramec(cislonahravky, cisloramce):
     if cislonahravky == "1":
         ramec_vybrany = nahravka1_ramce[cisloramce]
@@ -62,8 +70,8 @@ def print_ramec(cislonahravky, cisloramce):
     plt.xlabel('time [s]')
     plt.ylabel('y')
     plt.show()
-
-# Center clipping
+    
+# ------------ CENTER CLIPPING -----------------------------------------
 def clipping(create_graph):
     ramec_clipping = []
     maximum_abs = np.abs(ramec_vybrany).max()
@@ -84,7 +92,7 @@ def clipping(create_graph):
         plt.show()
     return ramec_clipping
 
-# Autokorelace
+# ------------ AUTOKORELACE -----------------------------------------
 def autocorrelation_math(ramec_clipping, k):
     ramec_clipping_my = ramec_clipping
     vysledok = 0
@@ -114,7 +122,7 @@ def autocorrelate(ramec_clipping, returnlag, create_graph):
         plt.stem(lag_x, lag_y, linefmt='red', label="Lag")
         plt.stem(prah_x, prah_y, use_line_collection=True, label="Prah")
         plt.title('Autokorelace')
-        plt.xlabel('vtime [s]')
+        plt.xlabel('time [s]')
         plt.ylabel('y')
         plt.legend()
         plt.show()
@@ -124,7 +132,7 @@ def autocorrelate(ramec_clipping, returnlag, create_graph):
     else:
         return 0
 
-# Zakladni frekvence
+# ------------ ZAKLADNI FREKVENCE --------------------------------
 zakladni_frekvence_nahravka1 = []
 zakladni_frekvence_nahravka2 = []
 
@@ -140,7 +148,8 @@ for i in range(100):
     ramec_vybrany = nahravka2_ramce[i]
     ramec_clipping = clipping(False)
     zakladni_frekvence_nahravka2.append(16000 / autocorrelate(ramec_clipping, True, False))
-    
+
+#spustanie ulohy 4
 t4 = np.arange(len(zakladni_frekvence_nahravka1))
 t5 = np.arange(len(zakladni_frekvence_nahravka2))
 plt.plot(t4, zakladni_frekvence_nahravka1, color='red', label="bez rousky")
@@ -149,13 +158,225 @@ plt.title('Zakladni frekvence ramcu')
 plt.xlabel('ramce')
 plt.ylabel('y')
 plt.legend()
-plt.show()
-        
-print_ramec(1, 50)
+plt.show()        
+print_ramec(1, 51)
 ramec_vybrany = nahravka2_ramce[51]
 ramec_clipping = clipping(True)
 autocorrelate(ramec_clipping, False, True)
 
+# -----------------------------------------------------------------------
+# ------------ UKOL 5 ---------------------------------------------------
+# -----------------------------------------------------------------------
+# ------------ VLASTNE DFT  --------------------------------
+def vlastne_DFT(ramec_vybrany):
+    dft_vysledok = []
+    pi = cmath.pi
+    for k in range(len(ramec_vybrany)):
+        dft_helper = 0
+        for n in range(len(ramec_vybrany)):
+            exponent = cmath.exp(-2j * pi * (1 / len(ramec_vybrany)) * k * n)
+            dft_helper += (ramec_vybrany[n] * exponent)
+        dft_vysledok.append(dft_helper)
+    return dft_vysledok
 
- 
+"""
+#test vlastne DFT
+ramec_vybrany = nahravka1_ramce[50]
+vlastne = vlastne_DFT(ramec_vybrany)
+original = np.fft.fft(ramec_vybrany)
+print(vlastne[2])
+print(original[2])
+"""
 
+# ------------ DFT nahravka 1  --------------------------------
+dft_nahravka1 = [] 
+for i in range(len(nahravka1_ramce)):
+    dft_nahravka1.append(np.fft.fft(nahravka1_ramce[i], n=1024))
+       
+log_ramce1 = []
+for i in range(len(dft_nahravka1)):
+    log_ramce1.append(10 * np.log10(np.abs(dft_nahravka1[i])**2))
+  
+log_ramce1 = np.transpose(log_ramce1)
+log_ramce1 = log_ramce1[0:512]
+
+# ------------ DFT nahravka 2  --------------------------------
+dft_nahravka2 = []
+for i in range(len(nahravka2_ramce)):
+    dft_nahravka2.append(np.fft.fft(nahravka2_ramce[i], n=1024))
+       
+log_ramce2 = []
+for i in range(len(dft_nahravka2)):
+    log_ramce2.append(10 * np.log10(np.abs(dft_nahravka2[i])**2))
+  
+log_ramce2 = np.transpose(log_ramce2)
+log_ramce2 = log_ramce2[0:512]
+
+# ------------ SPECTROGRAM nahravka1 PRINT--------------------
+#RUN ULOHA 5
+plt.imshow(log_ramce1, extent = [0 , 1.0, 0 , 8000], aspect="auto", origin="lower")
+plt.title('Spektrogram bez rousky')
+plt.xlabel('time [s]')
+plt.ylabel('frekvencia')
+cbar = plt.colorbar()
+cbar.set_label('', rotation=270, labelpad=15)
+plt.tight_layout()
+plt.show()
+
+# ------------ SPECTROGRAM nahravka2 PRINT--------------------
+plt.imshow(log_ramce2, extent = [0 , 1.0, 0 , 8000], aspect="auto", origin="lower")
+plt.title('Spektrogram s rouskou')
+plt.xlabel('time [s]')
+plt.ylabel('frekvencia')
+cbar = plt.colorbar()
+cbar.set_label('', rotation=270, labelpad=15)
+plt.tight_layout()
+plt.show()
+
+# -----------------------------------------------------------------------
+# ------------ UKOL 6 ---------------------------------------------------
+# -----------------------------------------------------------------------
+
+# ------------ FREKVENCNI CHARAKTERISTIKA -------------------------------
+dft_nahravka1 = [] 
+for i in range(len(nahravka1_ramce)):
+    dft_nahravka1.append(np.fft.fft(nahravka1_ramce[i], n=1024))    
+    
+dft_nahravka2 = []
+for i in range(len(nahravka2_ramce)):
+    dft_nahravka2.append(np.fft.fft(nahravka2_ramce[i], n=1024))
+       
+freq_charakteristika = []
+for i in range(100):
+    freq_charakteristika_helper = []
+    for j in range(1024):
+        freq_charakteristika_helper.append(np.absolute(dft_nahravka2[i][j]) / np.absolute(dft_nahravka1[i][j]))
+    freq_charakteristika.append(freq_charakteristika_helper)
+    
+freq_charakteristika = np.abs(freq_charakteristika)   
+ramec_priemerne = []
+for i in range(1024):
+    helper = []
+    for j in range(100):
+        helper.append(freq_charakteristika[j][i])
+    ramec_priemerne.append(np.mean(helper))
+    
+log_freq = []
+for i in range(len(ramec_priemerne)):
+    log_freq.append(10 * np.log10(np.abs(ramec_priemerne[i])**2))
+    
+# ------------ FREKVENCNI CHAR - PRINT --------------------
+#RUN ULOHA 6
+log_freq = log_freq[0:512]
+t6 = (np.arange(len(log_freq)))
+plt.plot(t6, log_freq)
+plt.title('Frekvencni charakteristika rousky')
+plt.xlabel('Vzorky')
+plt.ylabel('Spektralna hustota')
+plt.show()
+
+# -----------------------------------------------------------------------
+# ------------ UKOL 7 ---------------------------------------------------
+# -----------------------------------------------------------------------
+
+# ------------ FREKVENCNI CHARAKTERISTIKA -------------------------------
+dft_nahravka1 = [] 
+for i in range(len(nahravka1_ramce)):
+    dft_nahravka1.append(np.fft.fft(nahravka1_ramce[i], n=1024))    
+    
+dft_nahravka2 = []
+for i in range(len(nahravka2_ramce)):
+    dft_nahravka2.append(np.fft.fft(nahravka2_ramce[i], n=1024))
+       
+freq_charakteristika = []
+for i in range(100):
+    freq_charakteristika_helper = []
+    for j in range(1024):
+        freq_charakteristika_helper.append(np.absolute(dft_nahravka2[i][j]) / np.absolute(dft_nahravka1[i][j]))
+    freq_charakteristika.append(freq_charakteristika_helper)
+    
+freq_charakteristika = np.abs(freq_charakteristika)   
+ramec_priemerne = []
+for i in range(512):
+    helper = []
+    for j in range(100):
+        helper.append(freq_charakteristika[j][i])
+    ramec_priemerne.append(np.mean(helper))
+    
+idft = []
+idft = np.fft.ifft(ramec_priemerne, n=1024)
+
+# ------------ IDFT IMPLEMENTACE  -------------------------------
+def vlastne_IDFT(ramec_vybrany):
+    idft_vysledok = []
+    pi = cmath.pi
+    for k in range(len(ramec_vybrany)):
+        idft_helper = 0
+        for n in range(len(ramec_vybrany)):
+            exponent = cmath.exp(2j * pi * (1 / len(ramec_vybrany)) * k * n)
+            idft_helper += (ramec_vybrany[n] * exponent)
+        idft_vysledok.append(idft_helper * (1 / len(ramec_vybrany)))
+    return idft_vysledok
+
+"""
+#test vlastne IDFT
+ramec_vybrany = nahravka1_ramce[50]
+vlastne = vlastne_IDFT(ramec_vybrany)
+original = np.fft.ifft(ramec_vybrany)
+print(vlastne[2])
+print(original[2])
+"""
+
+#RUN ULOHA 6
+idft = idft[:512]
+t6 = (np.arange(len(idft)))
+plt.plot(t6, idft.real)
+plt.title('Impulsni odezva rousky')
+plt.xlabel('Vzorky')
+plt.grid(alpha=0.5, linestyle='--')
+plt.ylabel('y')
+plt.show()
+
+# -----------------------------------------------------------------------
+# ------------ UKOL 8 ---------------------------------------------------
+# -----------------------------------------------------------------------
+fig, (ax1, ax2, ax3) = plt.subplots(3)
+
+fs3, nahravka3 = wavfile.read('../audio/maskoff_sentence.wav')
+t8 = (np.arange(len(nahravka3)))
+ax1.plot(t8, nahravka3.real)
+ax1.set_title('maskoff_sentence')
+ax1.set_xlabel('Vzorky')
+ax1.set_ylabel('y')
+
+
+fs3, nahravka4 = wavfile.read('../audio/maskon_sentence.wav')
+t9 = (np.arange(len(nahravka4)))
+ax2.plot(t9, nahravka4.real)
+ax2.set_title('maskon_sentence')
+ax2.set_xlabel('Vzorky')
+ax2.set_ylabel('y')
+
+fs3, nahravka5 = wavfile.read('../audio/maskoff_tone.wav')
+filter_apply_tone = lfilter(idft, [1], nahravka5)
+
+# ------------ GRAFY  -------------------------------
+filter_apply_sentence = lfilter(idft, [1], nahravka3)
+t10 = (np.arange(len(filter_apply_sentence)))
+ax3.plot(t10, filter_apply_sentence.real)
+ax3.set_title('Simulovana rouska')
+ax3.set_xlabel('Vzorky')
+ax3.set_ylabel('y')
+
+plt.subplots_adjust(hspace=0.5)
+plt.show()
+
+plt.plot(t9, nahravka4.real, color='blue', label="s rouskou")
+plt.plot(t10, filter_apply_sentence.real, color='green', label="simulace")
+plt.xlabel('Vzorky')
+plt.ylabel('y')
+plt.legend()
+plt.show()
+
+sf.write('../audio/sim_maskon_sentence.wav', np.abs(filter_apply_sentence).astype('int16'), 16000)
+sf.write('../audio/sim_maskon_tone.wav', np.abs(filter_apply_tone).astype('int16'), 16000)
