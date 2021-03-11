@@ -1,8 +1,8 @@
 <?php
 
-define('INSTR_VAR', '/^(?:(GF|TF|LF)@([a-žA-Ž0-9_\-\$&%\*!?]+))$/');
-define('INSTR_SYMB', '/^(?:(GF|TF|LF)@([a-žA-Ž0-9_\-\$&%\*!?]+)|(nil@nil)|(int@[+-]?[0-9]+)|(string@(?:([^\s#\\\\]+)(?!(?9))|(\\\\[0-9]{3})+(?!(?10)))+)|(bool@(true|false))|(string@))$/');
-define('INSTR_LABEL', '/^([a-žA-Ž0-9_\-\$&%\*!?]+)$/');
+define('INSTR_VAR', '/^((GF|TF|LF)@([a-žA-Ž0-9_\-$&%*!?]*))$/');
+define('INSTR_SYMB', '/^((GF|TF|LF)@([a-žA-Ž0-9_\-$&%*!?]*)|(bool@true)|(bool@false)|(nil@nil)|(int@[-+]*[0-9]*)|(string@(\p{L})*[a-žA-Ž0-9_\-$&%*!?@]*)|(string@([a-žA-Ž0-9_\-$&%*!?]*))|(string@))$/');
+define('INSTR_LABEL', '/^([a-žA-Ž0-9_\-$&%*!?]*)$/');
 define('INSTR_TYPE', '/^(int|bool|string)$/');
 
 ini_set('display_errors', 'stderr');
