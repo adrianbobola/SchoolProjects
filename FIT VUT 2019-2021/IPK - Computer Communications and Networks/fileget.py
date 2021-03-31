@@ -23,7 +23,15 @@ if surl_filename_tail == "*":  # Stahujem vsetky polozky
 
 if ':' in arguments_parse.n:
     ip, port = arguments_parse.n.split(":", 1)
-    port = int(port)
+    try:
+        port = int(port)
+    except ValueError:
+        sys.stderr.write("Port ma nespravny format\n")
+        sys.exit(1)
+
+    if port > 65535 or port < 0:
+        sys.stderr.write("Chybne zadany port\n")
+        sys.exit(1)
 else:
     sys.stderr.write("Chybne zadana IP adresa\n")
     sys.exit(1)
@@ -36,15 +44,17 @@ if surl_parse.scheme != "fsp":
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP spojenie
 message1 = ("WHEREIS " + surl_parse.netloc).encode()
 sock.settimeout(30)
-sock.sendto(message1, (ip, port))
+try:
+    sock.sendto(message1, (ip, port))
+except socket.error:
+    sys.stderr.write("IP adresa ma nespravny format\n")
+    sys.exit(1)
 
 try:
     whereis_data, whereis_address = sock.recvfrom(4096)
-
 except socket.timeout:
     sys.stderr.write("Server neodpoveda \n")
     sys.exit(3)
-
 except ConnectionError:
     sys.stderr.write("Chyba pripojenia na UDP server \n")
     sys.exit(3)
