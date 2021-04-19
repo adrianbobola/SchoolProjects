@@ -26,70 +26,86 @@ function generate_html_stats()
     echo "</h3>";
 }
 
-function test_files($directory)
-{
-    // Nacteni jednotlivych souboru s koncovkou .src TODO
-    $files = explode("\n", shell_exec('ls ' . $directory . ' 2>/dev/null | grep .src'));
-    foreach ($files as $file) {
-        if ($file == "") {
-            break;
-        } elseif ($file == ".") {
-            continue;
-        } elseif ($file == "..") {
-            continue;
-        }
-
-        /*
-                // Vytvoreni souboru a naplneni predepsanymi hodnotami, pokud jiz neexistuji TODO
-                if (!file_exists($directory . rtrim($file, ".src") . '.in')) {
-                    $file_create = fopen($directory . rtrim($file, ".src") . '.in', 'w');
-                    fclose($file_create);
-                }
-                if (!file_exists($directory . rtrim($file, ".src") . '.out')) {
-                    $file_create = fopen($directory . rtrim($file, ".src") . '.out', 'w');
-                    fclose($file_create);
-                }
-                if (!file_exists($directory . rtrim($file, ".src") . '.rc')) {
-                    $file_create = fopen($directory . rtrim($file, ".src") . '.rc', 'w');
-                    fwrite($file_create, '0');
-                    fclose($file_create);
-                }
-        */
-
-        $tmpFile = tmpfile();
-        $output = NULL;
-        // Poslani zdrojoveho kodu obsazeneho v .src souboru do parseru TODO: parse.php nemusi byt v tejto slozke
-        exec('cat ' . $directory . '/' . $file . '| php7.4 ' . 'parse.php' . ' 2>/dev/null', $output, $returnHelper);
-
-        $file = str_replace('.src', '', $file);
-
-        if (!file_exists($directory . '/' . $file . '.rc')) {
-            $ref_return_code = 0;
-        } else {
-            $rcFile = fopen($directory . '/' . $file . '.rc', 'r');
-            $ref_return_code = fgets($rcFile);
-        }
-        if ($ref_return_code == $returnHelper) {
-            echo "Test cislo " . $GLOBALS["total_tests"] . ": <b>$file</b> v priecinku: <b>$directory</b>:\n";
-            echo "Navratovy kod:<b>" . $returnHelper . "</b> | Spravny navratovy kod: <b>$ref_return_code</b><p style=\"color:green\"><b>OK</b></p>\n";
-            echo "----------------------------------------------------------------------------------------------------------------------------<br>\n";
-            $GLOBALS["passed_tests"]++;
-        } else {
-            echo "Test cislo " . $GLOBALS["total_tests"] . ": <b>$file</b> v priecinku: <b>$directory</b>:\n";
-            echo "Navratovy kod:<b>" . $returnHelper . "</b> | Spravny navratovy kod: <b>$ref_return_code</b><p style=\"color:red\"><b>FAILED</b></p>\n";
-            echo "----------------------------------------------------------------------------------------------------------------------------<br>\n";
-            $GLOBALS["failed_tests"]++;
-        }
-        fclose($rcFile);
-        $GLOBALS["total_tests"]++;
-    }
-
-}
-
 function generate_html_end()
 {
     echo "</body>\n";
     echo "</html>\n";
+}
+
+function create_if_missing_files($directory, $file)
+{
+    if (!file_exists($directory . $file . '.in')) {
+        $new_file = fopen($directory . $file . '.in', 'w');
+        fclose($new_file);
+    }
+    if (!file_exists($directory . $file . '.out')) {
+        $new_file = fopen($directory . $file . '.out', 'w');
+        fclose($new_file);
+    }
+    if (!file_exists($directory . $file . '.rc')) {
+        $new_file = fopen($directory . $file . '.rc', 'w');
+        fwrite($new_file, '0');
+        fclose($new_file);
+    }
+}
+
+function check_files_location($directory, $int_only, $parse_script, $parse_only, $int_script, $jexamxml, $jexamcfg)
+{
+    if (!file_exists($directory)) {
+        fwrite(STDERR, "cesta $directory neexistuje\n");
+        exit(41);
+    }
+    if ($int_only == false) {
+        if (!file_exists($parse_script)) {
+            fwrite(STDERR, "subor $parse_script neexistuje\n");
+            exit(41);
+        }
+    }
+    if ($parse_only == false) {
+        if (!file_exists($int_script)) {
+            fwrite(STDERR, "subor $int_script neexistuje\n");
+            exit(41);
+        }
+    }
+    if (!file_exists($jexamxml)) {
+        fwrite(STDERR, "subor $jexamxml neexistuje\n");
+        exit(41);
+    }
+    if (!file_exists($jexamcfg)) {
+        fwrite(STDERR, "subor $jexamcfg neexistuje\n");
+        exit(41);
+    }
+}
+
+function chceck_deny_parameters($int_only, $parse_only, $parse_script_bool, $int_script_bool)
+{
+    if (($int_only == true) and ($parse_only == true)) {
+        fwrite(STDERR, "int_only a parse_only sa nesmu kombinovat\n");
+        exit(10);
+    } elseif (($int_only == true) and ($parse_script_bool == true)) {
+        fwrite(STDERR, "int_only a parse_script sa nesmu kombinovat\n");
+        exit(10);
+    } elseif (($parse_only == true) and ($int_script_bool == true)) {
+        fwrite(STDERR, "parse_only a int_script sa nesmu kombinovat\n");
+        exit(10);
+    }
+}
+
+function printing_help()
+{
+    echo "*** NAPOVEDA skriptu test.php ***\n" .
+        "Skript slouzi pro automaticke testovani aplikace parse.php\n" .
+        "a aplikace interpret.py\n" .
+        "---- Pouzite parametre: ------\n" .
+        "--help - zobrazi tuto napovedu\n" .
+        "--directory=path - testy bude hladat v zvolenom adresari\n" .
+        "--recursive - testy nebude hladat iba v adresari testu, ale rekurzivne aj v jeho podadresaroch\n" .
+        "--parse-script=file - subor so skriptom parse.php - ak chyba tak hladam parse.php v aktualnom adresari\n" .
+        "--int-script=file - subor so skriptom interpret.py v Python 3.8\n" .
+        "--parse-only - testujem iba skript pre analyzu kodu IPPcode21\n" .
+        "--int-only - testujem iba skript pre interpret kodu IPPcode21\n" .
+        "--jexamxml=file - subor s JAR balickom s nastrojom A7Soft JExamXML\n" .
+        "--jexamcfg=file - subor s konfiguraciou nastroja A7Soft JExamXML\n";
 }
 
 if ($argc == 1) { //no parameters
@@ -122,19 +138,7 @@ for ($i = 1; $i < $argc; $i++) {
 
 }
 if (($print_help == true) and ($help_with_another_param == false)) {
-    echo "*** NAPOVEDA skriptu test.php ***\n";
-    "Skript slouzi pro automaticke testovani aplikace parse.php\n" .
-    "a aplikace interpret.py\n" .
-    "---- Pouzite parametre: ------\n" .
-    "--help - zobrazi tuto napovedu\n" .
-    "--directory=path - testy bude hladat v zvolenom adresari\n" .
-    "--recursive - testy nebude hladat iba v adresari testu, ale rekurzivne aj v jeho podadresaroch\n" .
-    "--parse-script=file - subor so skriptom parse.php - ak chyba tak hladam parse.php v aktualnom adresari\n" .
-    "--int-script=file - subor so skriptom interpret.py v Python 3.8\n" .
-    "--parse-only - testujem iba skript pre analyzu kodu IPPcode21\n" .
-    "--int-only - testujem iba skript pre interpret kodu IPPcode21\n" .
-    "--jexamxml=file - subor s JAR balickom s nastrojom A7Soft JExamXML\n" .
-    "--jexamcfg=file - subor s konfiguraciou nastroja A7Soft JExamXML\n";
+    printing_help();
     exit(0);
 } elseif (($print_help == true) and ($help_with_another_param == true)) {
     fwrite(STDERR, "Parameter help nesmie obsahovat ine parametre\n");
@@ -188,44 +192,71 @@ for ($i = 1; $i < $argc; $i++) {
     }
 }
 
-if (($int_only == true) and ($parse_only == true)) {
-    fwrite(STDERR, "int_only a parse_only sa nesmu kombinovat\n");
-    exit(10);
-} elseif (($int_only == true) and ($parse_script_bool == true)) {
-    fwrite(STDERR, "int_only a parse_script sa nesmu kombinovat\n");
-    exit(10);
-} elseif (($parse_only == true) and ($int_script_bool == true)) {
-    fwrite(STDERR, "parse_only a int_script sa nesmu kombinovat\n");
-    exit(10);
-}
-
-if (!file_exists($directory)) {
-    fwrite(STDERR, "cesta $directory neexistuje\n");
-    exit(41);
-}
-if ($int_only == false) {
-    if (!file_exists($parse_script)) {
-        fwrite(STDERR, "subor $parse_script neexistuje\n");
-        exit(41);
-    }
-}
-if ($parse_only == false) {
-    if (!file_exists($int_script)) {
-        fwrite(STDERR, "subor $int_script neexistuje\n");
-        exit(41);
-    }
-}
-if (!file_exists($jexamxml)) {
-    fwrite(STDERR, "subor $jexamxml neexistuje\n");
-    exit(41);
-}
-if (!file_exists($jexamcfg)) {
-    fwrite(STDERR, "subor $jexamcfg neexistuje\n");
-    exit(41);
-}
-
+chceck_deny_parameters($int_only, $parse_only, $parse_script_bool, $int_script_bool);
+check_files_location($directory, $int_only, $parse_script, $parse_only, $int_script, $jexamxml, $jexamcfg);
 generate_html_start();
-test_files($directory);
+
+$parse_stats = array();
+$files = explode("\n", shell_exec('ls ' . $directory . ' 2>/dev/null | grep .src'));
+foreach ($files as $file) {
+    $file = str_replace('.src', '', $file); //odstran priponu .src suboru
+    if ($file == "") {
+        continue;
+    } elseif ($file == ".") {
+        continue;
+    } elseif ($file == "..") {
+        continue;
+    }
+    create_if_missing_files($directory, $file);
+    $output = NULL;
+
+    // Parse.php
+    if ($int_only == false) {
+        $parse_helper = array();
+        exec('cat ' . $directory . $file . '.src | php7.4 ' . $parse_script . '> tmp_output_test', $output, $parser_return_code);
+        $ref_return_code_file = fopen($directory . '/' . $file . '.rc', 'r');
+        $ref_return_code = fgets($ref_return_code_file);
+        if ($ref_return_code == $parser_return_code) {
+            if ($parser_return_code == 0) {
+                exec('java -jar ' . $jexamxml . ' tmp_output_test ' . $directory . "/" . $file . ".out tmp_output_test " . $jexamcfg . "> tmp_xml_test");
+                $xml_test = fopen('tmp_xml_test', 'r');
+                while (($line_test = fgets($xml_test)) != false) {
+                    if ($line_test == "Two files are identical\n") {
+                        echo "Test cislo " . $GLOBALS["total_tests"] . ": <b>$file</b> v priecinku: <b>$directory</b>:\n";
+                        echo "Navratovy kod:<b>" . $parser_return_code . "</b> | Spravny navratovy kod: <b>$ref_return_code</b><p style=\"color:green\"><b>OK</b></p>\n";
+                        echo "----------------------------------------------------------------------------------------------------------------------------<br>\n";
+                        $GLOBALS["passed_tests"]++;
+                        array_push($parse_helper, $GLOBALS["total_tests"], $file, $directory, $parser_return_code, $ref_return_code, "OK");
+                    }
+                }
+                fclose($xml_test);
+            } else {
+                echo "Test cislo " . $GLOBALS["total_tests"] . ": <b>$file</b> v priecinku: <b>$directory</b>:\n";
+                echo "Navratovy kod:<b>" . $parser_return_code . "</b> | Spravny navratovy kod: <b>$ref_return_code</b><p style=\"color:green\"><b>OK</b></p>\n";
+                echo "----------------------------------------------------------------------------------------------------------------------------<br>\n";
+                $GLOBALS["passed_tests"]++;
+                array_push($parse_helper, $GLOBALS["total_tests"], $file, $directory, $parser_return_code, $ref_return_code, "OK");
+            }
+        } else {
+            echo "Test cislo " . $GLOBALS["total_tests"] . ": <b>$file</b> v priecinku: <b>$directory</b>:\n";
+            echo "Navratovy kod:<b>" . $parser_return_code . "</b> | Spravny navratovy kod: <b>$ref_return_code</b><p style=\"color:red\"><b>FAILED</b></p>\n";
+            echo "----------------------------------------------------------------------------------------------------------------------------<br>\n";
+            $GLOBALS["failed_tests"]++;
+            array_push($parse_helper, $GLOBALS["total_tests"], $file, $directory, $parser_return_code, $ref_return_code, "FALSE");
+        }
+        exec('rm -f tmp_xml_test');
+        fclose($ref_return_code_file);
+        $GLOBALS["total_tests"]++;
+        array_push($parse_stats, $parse_helper);
+    }
+}
+foreach ($parse_stats as $array1) {
+    foreach ($array1 as $result) {
+    	echo $result; 
+	echo "\n";
+    }
+    echo "\n";
+} 
 generate_html_stats();
 
 
