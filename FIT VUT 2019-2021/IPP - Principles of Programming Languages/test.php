@@ -196,7 +196,7 @@ chceck_deny_parameters($int_only, $parse_only, $parse_script_bool, $int_script_b
 check_files_location($directory, $int_only, $parse_script, $parse_only, $int_script, $jexamxml, $jexamcfg);
 generate_html_start();
 
-$parse_stats = array();
+$result_stats = array();
 $files = explode("\n", shell_exec('ls ' . $directory . ' 2>/dev/null | grep .src'));
 foreach ($files as $file) {
     $file = str_replace('.src', '', $file); //odstran priponu .src suboru
@@ -208,55 +208,102 @@ foreach ($files as $file) {
         continue;
     }
     create_if_missing_files($directory, $file);
-    $output = NULL;
 
     // Parse.php
     if ($int_only == false) {
-        $parse_helper = array();
-        exec('cat ' . $directory . $file . '.src | php7.4 ' . $parse_script . '> tmp_output_test', $output, $parser_return_code);
+        $output = NULL;
+        $result = array();
+        exec('cat ' . $directory . $file . '.src | php7.4 ' . $parse_script . '> tmp_output_parser', $output, $parser_return_code);
         $ref_return_code_file = fopen($directory . '/' . $file . '.rc', 'r');
         $ref_return_code = fgets($ref_return_code_file);
-        if ($ref_return_code == $parser_return_code) {
-            if ($parser_return_code == 0) {
-                exec('java -jar ' . $jexamxml . ' tmp_output_test ' . $directory . "/" . $file . ".out tmp_output_test " . $jexamcfg . "> tmp_xml_test");
+        if ($ref_return_code == $parser_return_code) { //RC je zhodny s testovym RC
+            if ($parser_return_code == 0) { //RC je 0 -> pouzijem JExamXml
+                exec('java -jar ' . $jexamxml . ' tmp_output_parser ' . $directory . "/" . $file . ".out tmp_output_parser " . $jexamcfg . "> tmp_xml_test");
                 $xml_test = fopen('tmp_xml_test', 'r');
                 while (($line_test = fgets($xml_test)) != false) {
                     if ($line_test == "Two files are identical\n") {
+
+
+                        if ($parse_only == false) { //spusti interpret
+                            exec('python3 ' . $int_script . ' --source=tmp_output_parser < ' . $directory . '/' . $file . '.in > tmp_output_interpret', $output, $interpret_return_code);
+                            if ($ref_return_code == $interpret_return_code) { //RC je zhodny s testovym RC
+                                if ($interpret_return_code == 0) { //RC je 0 -> pouzijem diff
+                                    exec('diff tmp_output_interpret ' . $directory . "/" . $file . '.out', $output, $diff_return_code);
+                                    if ($diff_return_code == 0){ //su zhodne
+                                        print("******OK******");
+                                        array_push($result, $GLOBALS["total_tests"], $file, $directory, $interpret_return_code, $ref_return_code, "OK");
+                                    }
+                                    else{ //diff hlasi nezhodu
+                                        print("******NEOK******");
+                                        array_push($result, $GLOBALS["total_tests"], $file, $directory, $interpret_return_code, $ref_return_code, "FAILED-INTERPRET");
+                                    }
+                                }
+                                else { //RC nie je 0
+                                    print("******OK******");
+                                    array_push($result, $GLOBALS["total_tests"], $file, $directory, $interpret_return_code, $ref_return_code, "OK");
+                                }
+                            } else { //RC nie je zhodny s RC testu
+                                array_push($result, $GLOBALS["total_tests"], $file, $directory, $interpret_return_code, $ref_return_code, "FAILED-INTERPRET");
+                            }
+
+
+
+                        } else { //nespustam interpret
+                            array_push($result, $GLOBALS["total_tests"], $file, $directory, $parser_return_code, $ref_return_code, "OK");
+                        }
+
+                        /*
                         echo "Test cislo " . $GLOBALS["total_tests"] . ": <b>$file</b> v priecinku: <b>$directory</b>:\n";
                         echo "Navratovy kod:<b>" . $parser_return_code . "</b> | Spravny navratovy kod: <b>$ref_return_code</b><p style=\"color:green\"><b>OK</b></p>\n";
                         echo "----------------------------------------------------------------------------------------------------------------------------<br>\n";
                         $GLOBALS["passed_tests"]++;
-                        array_push($parse_helper, $GLOBALS["total_tests"], $file, $directory, $parser_return_code, $ref_return_code, "OK");
+                        */
                     }
                 }
                 fclose($xml_test);
-            } else {
-                echo "Test cislo " . $GLOBALS["total_tests"] . ": <b>$file</b> v priecinku: <b>$directory</b>:\n";
-                echo "Navratovy kod:<b>" . $parser_return_code . "</b> | Spravny navratovy kod: <b>$ref_return_code</b><p style=\"color:green\"><b>OK</b></p>\n";
-                echo "----------------------------------------------------------------------------------------------------------------------------<br>\n";
-                $GLOBALS["passed_tests"]++;
-                array_push($parse_helper, $GLOBALS["total_tests"], $file, $directory, $parser_return_code, $ref_return_code, "OK");
+            } else { //RC nie je 0
+                if ($parse_only == false) { //spusti interpret
+                    exec('python3 ' . $int_script . ' --source=tmp_output_parser < ' . $directory . '/' . $file . '.in > tmp_output_interpret', $output, $interpret_return_code);
+                    if ($ref_return_code == $interpret_return_code) { //RC je zhodny s testovym RC
+                        if ($interpret_return_code == 0) { //RC je 0 -> pouzijem diff
+                            exec('diff tmp_output_interpret ' . $directory . "/" . $file . '.out', $output, $diff_return_code);
+                            if ($diff_return_code == 0){ //su zhodne
+                                print("******OK******");
+                                array_push($result, $GLOBALS["total_tests"], $file, $directory, $interpret_return_code, $ref_return_code, "OK");
+                            }
+                            else{ //diff hlasi nezhodu
+                                print("******NEOK******");
+                                array_push($result, $GLOBALS["total_tests"], $file, $directory, $interpret_return_code, $ref_return_code, "FAILED-INTERPRET");
+                            }
+                        }
+                        else { //RC nie je 0
+                            array_push($result, $GLOBALS["total_tests"], $file, $directory, $interpret_return_code, $ref_return_code, "OK");
+                        }
+                    } else { //RC nie je zhodny s RC testu
+                        array_push($result, $GLOBALS["total_tests"], $file, $directory, $interpret_return_code, $ref_return_code, "FAILED-INTERPRET");
+                    }
+                } else { //nespustam interpret
+                    array_push($result, $GLOBALS["total_tests"], $file, $directory, $parser_return_code, $ref_return_code, "OK");
+                }
             }
-        } else {
+        } else { //RC nie je zhodny s testovym RC
             echo "Test cislo " . $GLOBALS["total_tests"] . ": <b>$file</b> v priecinku: <b>$directory</b>:\n";
             echo "Navratovy kod:<b>" . $parser_return_code . "</b> | Spravny navratovy kod: <b>$ref_return_code</b><p style=\"color:red\"><b>FAILED</b></p>\n";
             echo "----------------------------------------------------------------------------------------------------------------------------<br>\n";
             $GLOBALS["failed_tests"]++;
-            array_push($parse_helper, $GLOBALS["total_tests"], $file, $directory, $parser_return_code, $ref_return_code, "FALSE");
+            array_push($result, $GLOBALS["total_tests"], $file, $directory, $parser_return_code, $ref_return_code, "FAILED-PARSE");
         }
         exec('rm -f tmp_xml_test');
         fclose($ref_return_code_file);
         $GLOBALS["total_tests"]++;
-        array_push($parse_stats, $parse_helper);
+        array_push($result_stats, $result);
+    }
+
+    // Interpret
+    if ($int_only == true) { //TODO: BEZ PARSRU
+        exit(9999);
     }
 }
-foreach ($parse_stats as $array1) {
-    foreach ($array1 as $result) {
-    	echo $result; 
-	echo "\n";
-    }
-    echo "\n";
-} 
 generate_html_stats();
 
 
@@ -277,4 +324,3 @@ if ($int_only == true) {
     echo "--int_only<br>\n";
 }
 generate_html_end();
-
