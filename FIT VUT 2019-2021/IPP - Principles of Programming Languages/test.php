@@ -43,7 +43,13 @@ function generate_html_stats()
     echo "<h3> --- Test sum: --- <br>\n";
     echo "<p style=\"color:green\">Uspesne:   " . $GLOBALS["ok_tests"] . "</p>\n";
     echo "<p style=\"color:red\">Neuspesne: " . $GLOBALS["failed_tests"] . "</p>\n";
-    echo "<p style=\"color:blue\">Celkom   : " . $GLOBALS["total_tests"] . "</p>\n";
+    echo "<p style=\"color:blue\">Celkom: " . $GLOBALS["total_tests"] . "</p>\n";
+    if ($GLOBALS["total_tests"] != 0) {
+        $uspesnost = (100 / $GLOBALS["total_tests"]) * $GLOBALS["ok_tests"];
+    } else {
+        $uspesnost = 0;
+    }
+    echo "<p style=\"color:coral\">Uspesnost: " . $uspesnost . "% </p>\n";
     echo "</h3>";
 }
 
@@ -167,7 +173,11 @@ function printing_help()
 function print_test_parameters($directory, $parse_script, $int_script, $jexamxml, $jexamcfg, $recursive, $parse_only, $int_only)
 {
     echo "<h3> ---- Parametre test.php: ----</h3>\n";
-    echo "--directory = $directory <br>\n";
+    if ($recursive == true) {
+        echo "--directory = rekurzivne prechadzane<br>\n";
+    } else {
+        echo "--directory = $directory <br>\n";
+    }
     echo "--parse-script = $parse_script <br>\n";
     echo "--int-script = $int_script <br>\n";
     echo "--jexamxml = $jexamxml <br>\n";
@@ -385,27 +395,22 @@ foreach ($directories as $directory2) {
                 if ($ref_return_code == $parser_return_code) {
                     //RC je 0 a mam parameter --parse-only -> pouzijem JExamXML na porovnanie
                     if ($parser_return_code == 0) {
-                        exec('java -jar ' . $jexamxml . ' tmp_output_parser ' . $directory . $file . ".out tmp_output_parser " . $jexamcfg . " > tmp_xml_test");
-                        $xml_test = fopen('tmp_xml_test', 'r'); //nacitam tmp subor JExamXML
-                        $jexamxml_failed = true; //default hodnota
-                        //hladam riadok vo vystupe JExamXML, ktory mi udava informaciu o rovnakych suboroch
-                        while (($line_test = fgets($xml_test)) != false) {
-                            if ($line_test == "Two files are identical\n") { //JExamXml - najdene rovnake subory
-                                $jexamxml_failed = false;
-                                $result = "OK";
-                                $why = "";
-                                print_test_result($file, $directory, $ref_return_code, $parser_return_code, $result, $why);
-                                $GLOBALS["ok_tests"]++;
-                            }
-                        }
-                        //Presiel som cely JExamXml vystup - odlisne subory - chyba parser
-                        if ($jexamxml_failed == true) {
+                        exec('java -jar ' . $jexamxml . ' tmp_output_parser ' . $directory . $file . ".out delta.xml " . $jexamcfg, $output, $jexamxml_return_code);
+
+                        //JExamXml - rovnake subory
+                        if ($jexamxml_return_code == 0) {
+                            $result = "OK";
+                            $why = "";
+                            print_test_result($file, $directory, $ref_return_code, $parser_return_code, $result, $why);
+                            $GLOBALS["ok_tests"]++;
+                        } //JExamXml - odlisne subory - chyba parser
+                        else {
                             $result = "FAILED";
-                            $why = "parse.php - odlisne JExamXML";
+                            $why = "parse.php - JExamXM (odlisne subory)";
                             print_test_result($file, $directory, $ref_return_code, $parser_return_code, $result, $why);
                             $GLOBALS["failed_tests"]++;
                         }
-                        fclose($xml_test);
+
                     } //RC nieje 0, ale je zhodny s referencnym RC -> nepouzivam JExamXML
                     else {
                         $result = "OK";
@@ -427,6 +432,7 @@ foreach ($directories as $directory2) {
                 run_interpret($parser, $parsed_output, $int_script, $directory, $file, $ref_return_code);
             }
             //zmaz docasne vytvorene subory
+            exec('rm -f delta.xml');
             exec('rm -f tmp_output_parser.log');
             exec('rm -f tmp_xml_test');
             exec('rm -f tmp_output_parser');
