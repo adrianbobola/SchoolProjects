@@ -1,0 +1,98 @@
+{
+  "name": "pobocka-brno",
+  "maxX": 20,
+  "maxY": 20,
+  "trolley": [
+    {
+      "id": 0,
+      "x": 0,
+      "y": 18
+    }
+  ],
+  "staging ": [
+    {
+      "x": 0,
+      "y": 18
+    },
+    {
+      "x": 1,
+      "y": 18
+    },
+    {
+      "x": 0,
+      "y": 19
+    },
+    {
+      "x": 1,
+      "y": 19
+    }
+  ],
+  "content": [
+    {
+      "x": 0,
+      "y": 0,
+      "name": "ponozky",
+      "amount": 42
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "name": "boty",
+      "amount": 41
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "name": "svetry",
+      "amount": 58
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "name": "boty",
+      "amount": 1
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "name": "mikiny",
+      "amount": 4
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "name": "kosile",
+      "amount": 25
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "name": "saly",
+      "amount": 85
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "name": "spodni pradlo",
+      "amount": 32
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "name": "plavky",
+      "amount": 0
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "name": "puncochy",
+      "amount": 23
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "name": "puncochy",
+      "amount": 15
+    }
+  ]
+}
