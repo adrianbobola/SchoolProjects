@@ -1,26 +1,30 @@
 [
   {
     "name": "kosile",
-    "amount": 2
+    "amount": 45
   },
   {
     "name": "boty",
-    "amount": 4
+    "amount": 42
   },
   {
     "name": "saly",
-    "amount": 5
+    "amount": 50
   },
   {
     "name": "plavky",
-    "amount": 5
+    "amount": 44
   },
   {
     "name": "puncochy",
-    "amount": 30
+    "amount": 36
   },
   {
-    "name": "Iphone",
-    "amount": 1
+    "name": "mikina",
+    "amount": 79
+  },
+  {
+    "name": "cepice",
+    "amount": 55
   }
 ]

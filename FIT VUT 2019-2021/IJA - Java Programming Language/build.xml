@@ -3,27 +3,33 @@
     <property name="build" location="build"/>
     <property name="library" location="lib"/>
     <property name="doc" location="doc"/>
-    <property name="jar" value="IJA21.jar"/>
+    <property name="dest" location="dest"/>
+    <property name="jar" value="ija-app.jar"/>
+    <path id="class.path">
+        <fileset dir="${library}">
+            <include name="**/*.jar"/>
+        </fileset>
+    </path>
 
 
     <target name="clean">
         <delete dir="${build}"/>
-        <delete dir="${doc}"/>
+        <delete dir="${dest}"/>
     </target>
 
     <target name="compile" depends="clean">
         <mkdir dir="${build}"/>
-        <javac destdir="${build}" includeantruntime="first">
-            <src path="${src}"/>
-            <classpath>
-                <fileset dir="${library}" includes="*.jar"/>
-            </classpath>
+        <javac srcdir="${src}"  destdir="${build}" includeantruntime="false">
+            <modulepath path="${library}"/>
+            <compilerarg line="--add-modules=javafx.controls,javafx.fxml"/>
+            <classpath refid="class.path"/>
         </javac>
     </target>
 
 
     <target name="jar" depends="compile">
-        <jar destfile="${build}/${jar}" basedir="${build}" excludes="**/*.jar">
+        <mkdir dir="${dest}"/>
+        <jar destfile="${dest}/${jar}" basedir="${build}">
             <manifest>
                 <attribute name="Main-Class" value="ija21.Main"/>
                 <attribute name="Class-Path" value="${library}/json-simple-1.1.jar"/>
@@ -32,7 +38,10 @@
     </target>
 
     <target name="run" depends="jar">
-        <java jar="${build}/${jar}" fork="true"/>
+        <java jar="${dest}/${jar}" fork="true">
+            <modulepath path="${library}"/>
+            <jvmarg line="--add-modules=javafx.controls,javafx.fxml"/>
+        </java>
     </target>
 
 
@@ -47,11 +56,7 @@
                  use="true"
                  windowtitle="IJA PROJEKT"
                  charset="UTF-8">
-            <classpath>
-                <fileset dir="${library}">
-                    <include name="json-simple-1.1.jar"/>
-                </fileset>
-            </classpath>
+            <classpath refid="class.path"/>
             <doctitle><![CDATA[<h1>IJA PROJEKT</h1>]]></doctitle>
             <bottom><![CDATA[<i>Autor: Dokoupil Ladislav, Bobola Adrián</i>]]></bottom>
         </javadoc>
