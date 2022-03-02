@@ -1,5 +1,5 @@
 # Welcome to my GitHub repository!
-There you can find all my school projects. Please let me know if you have any questions.
+There you can find all my school projects. <br>Please let me know if you have any questions.
 adrian.bobola@gmail.com
 
 # FI MUNI - 2018 - 2019
