@@ -3,10 +3,10 @@ There you can find all my school projects
 
 # FI MUNI - 2018 - 2019
 
-IB002 - Algorithms I
-IB111 - Foundations of Programming - Python
-PB071 - Introduction to the C language
-IB000 - Math. Foundations of CS
+IB002 - Algorithms I<br>
+IB111 - Foundations of Programming - Python<br>
+PB071 - Introduction to the C language<br>
+IB000 - Math. Foundations of CS<br>
 
 # FIT VUT 2019 - 2022
 
