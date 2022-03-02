@@ -1,9 +1,14 @@
 # Welcome to my GitHub repository!
 There you can find all my school projects
 
-# FI MUNI - 1st year 2018/2019
+# FI MUNI - 2018 - 2019
 
-# FIT VUT 2019/2022
+IB002 - Algorithms I
+IB111 - Foundations of Programming - Python
+PB071 - Introduction to the C language
+IB000 - Math. Foundations of CS
+
+# FIT VUT 2019 - 2022
 
 ## 1. semester
 
